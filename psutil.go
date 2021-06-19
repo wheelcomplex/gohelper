@@ -1,5 +1,5 @@
 //
-package gohelper
+package main
 
 import (
 	"bufio"
@@ -135,7 +135,7 @@ func sigToPidTree(cmdPid int, recvSig os.Signal) error {
 	return ret
 }
 
-func loopExec(execArgs []string, logfile string, cmdChan chan *CmdInfo, workdir string, timeout int) int {
+func loopExec(execArgs []string, logfile string, cmdChan chan *CmdInfo, workdir string, timeout int, env []string) int {
 	// todo: multi-loopExec log to background logger by channel
 	if sysDebug {
 		log.Printf("loopExec, %v\n", execArgs)
@@ -194,7 +194,9 @@ func loopExec(execArgs []string, logfile string, cmdChan chan *CmdInfo, workdir 
 
 	cmdSetup(cmd)
 
-	cmd.Env = sysEnv
+	if len(env) > 0 {
+		cmd.Env = env
+	}
 	cmd.Dir = workdir
 
 	cmdinfo.Cmd = cmd
@@ -361,7 +363,7 @@ func loopExec(execArgs []string, logfile string, cmdChan chan *CmdInfo, workdir 
 	return cmdinfo.Pid
 }
 
-func foreExec(execArgs []string, logfile string, workdir string, timeout int) *CmdInfo {
+func foreExec(execArgs []string, logfile string, workdir string, timeout int, env []string) *CmdInfo {
 
 	cmdChan := make(chan *CmdInfo, 1)
 
@@ -369,7 +371,7 @@ func foreExec(execArgs []string, logfile string, workdir string, timeout int) *C
 		log.Printf("foreExec, %v\n", execArgs)
 	}
 
-	loopExec(execArgs, logfile, cmdChan, workdir, timeout)
+	loopExec(execArgs, logfile, cmdChan, workdir, timeout, env)
 
 	return <-cmdChan
 

@@ -28,7 +28,6 @@ import (
 
 var sysDebug = false
 var sysQuiet = false
-var sysEnv []string
 
 // ntp server from https://dns.iui.im/ntp/
 var defaultNTPServers = "time.windows.com,time.google.com,time.apple.com,time.pool.aliyun.com,ntp.ntsc.ac.cn,cn.ntp.org.cn,pool.ntp.org,time.cloudflare.com"
@@ -36,6 +35,7 @@ var defaultNTPServers = "time.windows.com,time.google.com,time.apple.com,time.po
 func main() {
 
 	var err error
+	var sysEnv []string
 
 	var (
 		shell            = ""
@@ -136,7 +136,7 @@ func main() {
 
 	flag.Parse()
 
-	crlf = gohelper.cleanArgString(crlf)
+	crlf = cleanArgString(crlf)
 
 	curTaskArgs := os.Args
 	if len(crlf) > 0 || len(lf) > 0 {
@@ -165,21 +165,21 @@ func main() {
 		curTaskArgs = append(curTaskArgs, []string{"--files", "__FILE__"}...)
 	}
 
-	logFile = gohelper.cleanArgString(logFile)
-	fileList = gohelper.cleanArgString(fileList)
-	walkfile = gohelper.cleanArgString(walkfile)
-	workDir = gohelper.cleanArgString(workDir)
-	preExecFile = gohelper.cleanArgString(preExecFile)
-	postExecFile = gohelper.cleanArgString(postExecFile)
-	walkexec = gohelper.cleanArgString(walkexec)
-	walkregex = gohelper.cleanArgString(walkregex)
-	walkpattern = gohelper.cleanArgString(walkpattern)
-	loadEnvFile = gohelper.cleanArgString(loadEnvFile)
-	ntpServers = gohelper.cleanArgString(ntpServers)
-	tailfile = gohelper.cleanArgString(tailfile)
-	helpers = gohelper.cleanArgString(helpers)
-	tailsearch = gohelper.cleanArgString(tailsearch)
-	shell = gohelper.cleanArgString(shell)
+	logFile = cleanArgString(logFile)
+	fileList = cleanArgString(fileList)
+	walkfile = cleanArgString(walkfile)
+	workDir = cleanArgString(workDir)
+	preExecFile = cleanArgString(preExecFile)
+	postExecFile = cleanArgString(postExecFile)
+	walkexec = cleanArgString(walkexec)
+	walkregex = cleanArgString(walkregex)
+	walkpattern = cleanArgString(walkpattern)
+	loadEnvFile = cleanArgString(loadEnvFile)
+	ntpServers = cleanArgString(ntpServers)
+	tailfile = cleanArgString(tailfile)
+	helpers = cleanArgString(helpers)
+	tailsearch = cleanArgString(tailsearch)
+	shell = cleanArgString(shell)
 
 	workDir = strings.Trim(workDir, "/\\")
 	walkexec = strings.Trim(walkexec, "/\\")
@@ -599,7 +599,7 @@ func main() {
 
 	if len(preExecFile) > 0 {
 		log.Printf("pre-exec script: %s, log to %s\n", preExecFile, logFile)
-		cmdinfo := foreExec([]string{preExecFile}, logFile, workDir, preTimeout)
+		cmdinfo := foreExec([]string{preExecFile}, logFile, workDir, preTimeout, sysEnv)
 		if cmdinfo.Err != nil {
 			log.Printf("WARNING: pre-exec script: %s, failed, %v\n", preExecFile, cmdinfo.Err)
 		} else {
@@ -666,7 +666,7 @@ func main() {
 				if !sysQuiet {
 					log.Printf("Info: background helper#%d: %v\n", k, cmdArr)
 				}
-				helperPidChan <- loopExec(cmdArr, logFile, helperChan, workDir, helperTimeout)
+				helperPidChan <- loopExec(cmdArr, logFile, helperChan, workDir, helperTimeout, sysEnv)
 			}
 			helperWait <- true
 		}()
@@ -788,7 +788,7 @@ func main() {
 				if !ok {
 					continue
 				}
-				cmdPid = loopExec(v, logFile, mainCmdChan, workDir, timeout)
+				cmdPid = loopExec(v, logFile, mainCmdChan, workDir, timeout, sysEnv)
 				running = true
 				fanoutCount++
 				if sysDebug {
@@ -826,7 +826,7 @@ func main() {
 
 	if len(postExecFile) > 0 {
 		log.Printf("post-exec script: %s, log to %s\n", postExecFile, logFile)
-		cmdinfo := foreExec([]string{postExecFile}, logFile, workDir, postTimeout)
+		cmdinfo := foreExec([]string{postExecFile}, logFile, workDir, postTimeout, sysEnv)
 		if cmdinfo.Err != nil {
 			log.Printf("WARNING: post-exec script: %v, failed, %v\n", cmdinfo.Args, cmdinfo.Err)
 		} else {

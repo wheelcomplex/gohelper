@@ -1,7 +1,7 @@
 //go:build windows && cgo
 // +build windows,cgo
 
-package gohelper
+package main
 
 /*
 #include <windows.h>
@@ -116,14 +116,14 @@ func completer(t prompt.Document) []prompt.Suggest {
 }
 
 // https://github.com/wheelcomplex/go-prompt/blob/master/_example/exec-command/main.go
-func execShell(shell string, args []string, env []string) error {
+func execShell2(shell string, args []string, env []string) error {
 
 	cmd := exec.Command(shell, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if len(env) > 0 {
-		cmd.Env = sysEnv
+		cmd.Env = env
 	}
 
 	executor := func(t string) {
@@ -132,7 +132,7 @@ func execShell(shell string, args []string, env []string) error {
 	}
 
 	if !sysQuiet {
-		log.Printf("Info: Windows Shell running, pid %d, path %s, args %v\n", cmd.Getpid(), shell, args)
+		log.Printf("Info: Windows Shell running, pid %d, path %s, args %v\n", cmd.Process.Pid, shell, args)
 	}
 
 	p := prompt.New(
@@ -142,4 +142,22 @@ func execShell(shell string, args []string, env []string) error {
 	p.Run()
 
 	return nil
+}
+
+func execShell(shell string, args []string, env []string) error {
+	cmd := exec.Command(shell, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if len(env) > 0 {
+		cmd.Env = env
+	}
+
+	if !sysQuiet {
+		log.Printf("Info: Windows Shell running, pid %d, path %s, args %v\n", cmd.Process.Pid, shell, args)
+	}
+
+	cmd.Start()
+
+	return cmd.Wait()
 }

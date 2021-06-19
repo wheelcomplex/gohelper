@@ -1,7 +1,7 @@
 //go:build linux && cgo
 // +build linux,cgo
 
-package gohelper
+package main
 
 /*
 #include <sys/time.h>
@@ -87,8 +87,10 @@ func execShell(shell string, args []string, env []string) error {
 	// Create arbitrary command.
 	cmd := exec.Command(shell, args...)
 	if len(env) > 0 {
-		cmd.Env = sysEnv
+		cmd.Env = env
 	}
+
+	cmd.Env = append(cmd.Env, "PS1='${debian_chroot:+($debian_chroot)}\\u@\\h:\\w gohelper[$$]\\$'")
 
 	// Start the command with a pty.
 	ptmx, err := pty.Start(cmd)
@@ -99,7 +101,7 @@ func execShell(shell string, args []string, env []string) error {
 	defer func() { _ = ptmx.Close() }() // Best effort.
 
 	if !sysQuiet {
-		log.Printf("Info: Linux Shell running, pid %d, path %s, args %v\n", cmd.Getpid(), shell, args)
+		log.Printf("Info: Linux Shell running, pid %d, path %s, args %v\n", cmd.Process.Pid, shell, args)
 	}
 
 	// Handle pty size.
@@ -125,6 +127,9 @@ func execShell(shell string, args []string, env []string) error {
 	// Copy stdin to the pty and the pty to stdout.
 	// NOTE: The goroutine will keep reading until the next keystroke before returning.
 	go func() { _, _ = io.Copy(ptmx, os.Stdin) }()
+
+	// fmt.Fprintf(cmd.Stdin, "PS1='${debian_chroot:+($debian_chroot)}\\u@\\h:\\w gohelper[$$]\\$'\n")
+
 	_, _ = io.Copy(os.Stdout, ptmx)
 
 	return nil
